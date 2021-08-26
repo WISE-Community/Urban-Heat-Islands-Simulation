@@ -5,6 +5,7 @@ breed [ CO2 CO2s ]
 breed [ car cars ]
 breed [ truck trucks ]
 breed [ factory factorys ]
+breed [ house houses ]
 
 globals [ sky-top earth-top temperature num-CO2 starter sun-brightness albedo albedos car-pollution  truck-pollution factory-pollution xxx]
 
@@ -78,7 +79,7 @@ end
 to setup-world
   set sun-brightness 1.1
   set albedo .9
-  set albedos [0 0.25 0.75 1]
+  set albedos [0 0 0 0]
   set temperature 12  ;; start with a cold earth
   set sky-top (max-pycor - 5)
   set earth-top (8 + min-pycor)
@@ -95,41 +96,20 @@ to setup-world
      set color 13 + random 4
      set breed heat
      set shape "dot"  ]
-  ;; place trucks, factories, cars
-  create-truck 1 [
-    set shape "truck"
-    set size 3
-    set color red
-    setxy -3 * min-pxcor / 4 earth-top + 1
-    set heading 90 ]
-  create-truck 1 [
-    set shape "truck"
-    set size 3
-    set color blue
-    setxy min-pxcor / 4 earth-top + 1
-    set heading 90 ]
-  create-car 1 [
-    set shape "car"
-    set size 2
-    set color green
-    setxy 0 - min-pxcor / 4 earth-top + 1
-    set heading 90 ]
-  create-car 1 [
-    set shape "car"
-    set size 2
-    set color yellow
-    setxy 3 * min-pxcor / 4 earth-top + 1
-    set heading 90 ]
-  create-factory 1 [
-    set shape "factory"
-    set size 5
-    set color black
-    setxy 0 - min-pxcor / 2  earth-top + 2 ]
-  create-factory 1 [
-    set shape "factory"
-    set size 5
-    set color black
-    setxy  min-pxcor / 2  earth-top + 2 ]
+  foreach [0 1 2 3 4]
+  [ n ->
+    make-house black (0 - min-pxcor / 2) + n earth-top + 1 ]
+  foreach [0 1 2 3 4]
+  [ n ->
+    make-house white (min-pxcor / 2) + n earth-top + 1 ]
+end
+
+to make-house [roof-color x y]
+  create-house 1 [
+    set shape "house with roof"
+    set size 1
+    set color roof-color
+    setxy x y ]
 end
 
 to run-sunshine
@@ -137,6 +117,7 @@ to run-sunshine
      fd .3    ;; move sunrays forward
      if ((heading = 20) and (ycor = max-pycor)) [ die ] ] ;; kill rays leaving upward
   create-sunshine  ;; start new sun rays from top
+  encounter-house
   encounter-earth   ;; check for reflection off earth and absorbtion
  end
 
@@ -160,6 +141,13 @@ to encounter-earth
             set shape "dot"  ]]]
 end
 
+to encounter-house
+  ask sunray [
+    if (count house-here with [ color = white ] > 0) [ set heading 340 ]
+    if ((ycor >= max-pycor) and (heading = 340)) [die]
+  ]
+end
+
 to run-heat    ;; advances the heat energy turtles
   set temperature .99 * temperature + .01 * (5 + .2 * count heat) ;; the temperature is related to the number of heat turtles
   plot temperature
@@ -170,7 +158,8 @@ to run-heat    ;; advances the heat energy turtles
       ifelse (temperature > -20 + random 200)    ;; select some to escape, more if it is hot
         [ set breed IR
         set heading -50 + random 100 ;; start the IR off in a random upward direction
-        set color magenta
+        ;; set color magenta
+        set color [0 0 0 0]
         set shape "default" ]           ;; let them escape as IR with arrowhead shapes
       [ set heading 100 + random 160 ]]] ;; otherwise return them to earth
 end
@@ -197,7 +186,8 @@ to draw-CO2 [N]  ;; puts N GG molecules into atmosphere randomly placed
           if i = 0 [set shape "co2"]
           if i = 1 [set shape "molecule water"]
           if i = 2 [set shape "black ball"]
-          set color black
+          ;; set color black
+          set color [0 0 0 0]
           setxy random (2 * max-pxcor) + min-pxcor earth-top + random width
           set heading random 360 ]] ;; heading is used to spin molecule
   set num-CO2 count CO2
@@ -222,7 +212,8 @@ to add-CO2 [N xlocation ylocation] ;; adds 0 to N-1 (selected at random) polluti
           if i = 0 [set shape "co2"]
           if i = 1 [set shape "molecule water"]
           if i = 2 [set shape "black ball"]
-          set color black
+          ;; set color black
+          set color [0 0 0 0]
           setxy xlocation ylocation
           set heading random 180 - 90 ]] ;; head upward
   set num-CO2 count CO2
@@ -268,13 +259,12 @@ end
 
 
 
-
 @#$#@#$#@
 GRAPHICS-WINDOW
 308
 29
-906
-407
+913
+416
 -1
 -1
 12.2
@@ -295,7 +285,7 @@ GRAPHICS-WINDOW
 0
 0
 ticks
-30
+30.0
 
 BUTTON
 44
@@ -339,15 +329,15 @@ PLOT
 Global Temperature
 Years
 Celsius
-0
-10000
-0
-40
+0.0
+10000.0
+0.0
+40.0
 true
 false
 "" ""
 PENS
-"default" 1 0 -2674135 true "" ""
+"default" 1.0 0 -2674135 true "" ""
 
 CHOOSER
 130
@@ -355,7 +345,7 @@ CHOOSER
 306
 105
 Turn_off_lights
-turn_off_lights
+Turn_off_lights
 "Always" "Sometimes" "Never"
 2
 
@@ -365,7 +355,7 @@ CHOOSER
 306
 57
 Walk_to_school
-walk_to_school
+Walk_to_school
 "Always" "Sometimes" "Never"
 2
 
@@ -375,10 +365,10 @@ SLIDER
 646
 53
 Model_Speed
-model_speed
+Model_Speed
 0
 100
-50
+36.0
 1
 1
 NIL
@@ -417,6 +407,7 @@ NIL
 NIL
 NIL
 1
+
 @#$#@#$#@
 ## WHAT IS IT?
 
@@ -634,13 +625,13 @@ Circle -16777216 true false 113 68 74
 Polygon -10899396 true false 189 233 219 188 249 173 279 188 234 218
 Polygon -10899396 true false 180 255 150 210 105 210 75 240 135 240
 
-house
+house with roof
 false
-0
-Rectangle -7500403 true true 45 120 255 285
-Rectangle -16777216 true false 120 210 180 285
-Polygon -7500403 true true 15 120 150 15 285 120
-Line -16777216 false 30 120 270 120
+14
+Rectangle -7500403 true false 45 120 255 285
+Rectangle -6459832 true false 120 210 180 285
+Polygon -16777216 true true 15 120 150 15 285 120
+Line -16777216 true 30 120 270 120
 
 leaf
 false
@@ -791,15 +782,15 @@ NetLogo 6.2.0
 @#$#@#$#@
 @#$#@#$#@
 default
-0
--0.2 0 0 1
-0 1 1 0
-0.2 0 0 1
+0.0
+-0.2 0 0.0 1.0
+0.0 1 1.0 0.0
+0.2 0 0.0 1.0
 link direction
 true
 0
 Line -7500403 true 150 150 90 180
 Line -7500403 true 150 150 210 180
 @#$#@#$#@
-
+0
 @#$#@#$#@
