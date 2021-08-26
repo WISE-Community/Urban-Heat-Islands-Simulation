@@ -6,7 +6,7 @@ breed [ car cars ]
 breed [ truck trucks ]
 breed [ factory factorys ]
 
-globals [ sky-top earth-top temperature num-CO2 starter sun-brightness albedo car-pollution  truck-pollution factory-pollution xxx]
+globals [ sky-top earth-top temperature num-CO2 starter sun-brightness albedo albedos car-pollution  truck-pollution factory-pollution xxx]
 
 to setup
   ;; (for this model to work with NetLogo's new plotting features,
@@ -56,12 +56,29 @@ to execute
 end
 
 to update-albedo
-  if (pycor = earth-top) [ set pcolor 50 + 9 * albedo ]
+  if (pycor = earth-top) [
+    let temp-albedo get-albedo pxcor
+    set pcolor 50 + 9 * temp-albedo
+  ]
+end
+
+to-report get-albedo [pxcorval]
+  let x 2 * (pxcorval + 25)
+  let segment-width 100 / length albedos
+  let albedo-index 0
+  loop [
+    if (x < (segment-width * (albedo-index + 1))) [
+      let temp-albedo item albedo-index albedos
+      report temp-albedo
+    ]
+    set albedo-index albedo-index + 1
+  ]
 end
 
 to setup-world
   set sun-brightness 1.1
-  set albedo .6
+  set albedo .9
+  set albedos [0 0.25 0.75 1]
   set temperature 12  ;; start with a cold earth
   set sky-top (max-pycor - 5)
   set earth-top (8 + min-pycor)
@@ -134,7 +151,8 @@ end
 to encounter-earth
   ask sunray [
     if (ycor <= earth-top) [
-      ifelse (100 * albedo > random 100)
+      let temp-albedo get-albedo pxcor
+      ifelse (100 * temp-albedo > random 100)
           [ set heading 20  ]           ;; reflect
           [ set heading 95 + random 170 ;; morph into heat energy
             set color 13 + random 4
@@ -255,8 +273,8 @@ end
 GRAPHICS-WINDOW
 308
 29
-913
-416
+906
+407
 -1
 -1
 12.2
@@ -277,7 +295,7 @@ GRAPHICS-WINDOW
 0
 0
 ticks
-30.0
+30
 
 BUTTON
 44
@@ -321,15 +339,15 @@ PLOT
 Global Temperature
 Years
 Celsius
-0.0
-10000.0
-0.0
-40.0
+0
+10000
+0
+40
 true
 false
 "" ""
 PENS
-"default" 1.0 0 -2674135 true "" ""
+"default" 1 0 -2674135 true "" ""
 
 CHOOSER
 130
@@ -337,7 +355,7 @@ CHOOSER
 306
 105
 Turn_off_lights
-Turn_off_lights
+turn_off_lights
 "Always" "Sometimes" "Never"
 2
 
@@ -347,7 +365,7 @@ CHOOSER
 306
 57
 Walk_to_school
-Walk_to_school
+walk_to_school
 "Always" "Sometimes" "Never"
 2
 
@@ -357,10 +375,10 @@ SLIDER
 646
 53
 Model_Speed
-Model_Speed
+model_speed
 0
 100
-50.0
+50
 1
 1
 NIL
@@ -399,7 +417,6 @@ NIL
 NIL
 NIL
 1
-
 @#$#@#$#@
 ## WHAT IS IT?
 
@@ -774,15 +791,15 @@ NetLogo 6.2.0
 @#$#@#$#@
 @#$#@#$#@
 default
-0.0
--0.2 0 0.0 1.0
-0.0 1 1.0 0.0
-0.2 0 0.0 1.0
+0
+-0.2 0 0 1
+0 1 1 0
+0.2 0 0 1
 link direction
 true
 0
 Line -7500403 true 150 150 90 180
 Line -7500403 true 150 150 210 180
 @#$#@#$#@
-0
+
 @#$#@#$#@
