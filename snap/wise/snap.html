@@ -43,24 +43,39 @@
       var messageListenerInitialized = false;
       var wiseAPI = new WISEAPI();
       window.onload = function () {
+        messageListenerInitialized = false;
         if ('serviceWorker' in navigator) {
           navigator.serviceWorker.register('sw.js');
         }
         world = new WorldMorph(document.getElementById('world'));
         new IDE_Morph().openIn(world);
         ide = world.children[0];
+        wiseAPI.handleComponentStateMessage = (message) => {
+          if (message.componentState == null) {
+            loadModelFromXMLParameter();
+          } else {
+            const studentData = message.componentState.studentData;
+            ide.openMediaString(studentData.media);
+            ide.openProjectString(studentData.xml);
+          }
+        };
+        loop();
+        wiseAPI.sendApplicationInitializedMessage();
+      };
+      function loadModelFromXMLParameter() {
         const xmlFileName = getURLParameters('xml');
         fetch(`${xmlFileName}`)
           .then((response) => response.text())
           .then((text) => {
             ide.openProjectString(text);
           });
-        loop();
-      };
+      }
       function loop() {
         requestAnimationFrame(loop);
         world.doOneCycle();
         if (!messageListenerInitialized && ide.getMessages().includes('Save_To_WISE')) {
+          // hideCorral();
+          // makeResetButton();
           ide.addMessageListener('Save_To_WISE', (e) => {
             const tracker = ide.getVar('Tracker');
             if (tracker != null) {
@@ -76,6 +91,24 @@
           });
           messageListenerInitialized = true;
         }
+      }
+      function hideCorral() {
+        ide.corral.hide();
+        ide.corralBar.hide();
+      }
+      function makeResetButton() {
+        ide.children[6].toolBar.add(
+          new PushButtonMorph(
+            ide.children[6],
+            () => {
+              console.log('Reset');
+              reset();
+            },
+            'Reset'
+          )
+        );
+        ide.children[6].toolBar.fixLayout();
+        ide.children[6].adjustToolBar();
       }
       function getURLParameters(key) {
         const parameters = {};
@@ -156,7 +189,6 @@
         }
       }
       function saveToWISE(snapData) {
-        snapData.xml = snapData.xml.replaceAll('🌐', '\xF0\x9F\x8C\x90');
         const componentState = wiseAPI.createComponentState(snapData, 'studentDataChanged');
         componentState.studentData.type = 'snap';
         try {
@@ -164,6 +196,10 @@
         } catch (err) {
           console.log('not posted');
         }
+      }
+      function reset() {
+        messageListenerInitialized = false;
+        loadModelFromXMLParameter();
       }
     </script>
   </head>
