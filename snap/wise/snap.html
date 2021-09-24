@@ -40,10 +40,8 @@
     <script>
       var world;
       var ide;
-      var messageListenerInitialized = false;
       var wiseAPI = new WISEAPI();
       window.onload = function () {
-        messageListenerInitialized = false;
         if ('serviceWorker' in navigator) {
           navigator.serviceWorker.register('sw.js');
         }
@@ -54,9 +52,7 @@
           if (message.componentState == null) {
             loadModelFromXMLParameter();
           } else {
-            const studentData = message.componentState.studentData;
-            ide.openMediaString(studentData.media);
-            ide.openProjectString(studentData.xml);
+            loadModelFromStudentData(message.componentState.studentData);
           }
         };
         loop();
@@ -70,38 +66,62 @@
             ide.openProjectString(text);
           });
       }
+      function loadModelFromStudentData(studentData) {
+        ide.openMediaString(studentData.media);
+        ide.openProjectString(studentData.xml);
+      }
       function loop() {
         requestAnimationFrame(loop);
         world.doOneCycle();
-        if (!messageListenerInitialized && ide.getMessages().includes('Save_To_WISE')) {
-          // hideCorral();
-          // makeResetButton();
-          ide.addMessageListener('Save_To_WISE', (e) => {
-            const tracker = ide.getVar('Tracker');
-            if (tracker != null) {
-              const data = convertTrackerToSeriesData(tracker);
-              const id = getId(ide);
-              const percentage = getPercentage(ide);
-              const series = createSeries(id, id, data, getColorForPercentage(percentage));
-              const trial = createTrial(id, id, series);
-              const studentData = ide.buildProjectRequest();
-              studentData.trials = [trial];
-              saveToWISE(studentData);
-            }
-          });
-          messageListenerInitialized = true;
+        if (!isSaveToWiseMessageListenerInitialized()) {
+          initializeSaveToWiseMessageListener();
+        }
+        if (!isResetButtonInitialized()) {
+          makeResetButton();
         }
       }
-      function hideCorral() {
-        ide.corral.hide();
-        ide.corralBar.hide();
+      function isSaveToWiseMessageListenerInitialized() {
+        return ide.stage.messageCallbacks['Save_To_WISE'] != null;
+      }
+      function initializeSaveToWiseMessageListener() {
+        ide.addMessageListener('Save_To_WISE', (e) => {
+          const tracker = ide.getVar('Tracker');
+          if (tracker != null) {
+            const data = convertTrackerToSeriesData(tracker);
+            const id = getId(ide);
+            const percentage = getPercentage(ide);
+            const series = createSeries(id, id, data, getColorForPercentage(percentage));
+            const trial = createTrial(id, id, series);
+            const studentData = ide.buildProjectRequest();
+            studentData.trials = [trial];
+            saveToWISE(studentData);
+          }
+        });
+      }
+      function isResetButtonInitialized() {
+        for (const ideChild of ide.children) {
+          if (ideChild.constructor.name === 'ScrollFrameMorph') {
+            for (const scrollFrameMorphChild of ideChild.children) {
+              if (scrollFrameMorphChild.constructor.name === 'AlignmentMorph') {
+                for (const alignmentMorphChild of scrollFrameMorphChild.children) {
+                  if (
+                    alignmentMorphChild.constructor.name === 'PushButtonMorph' &&
+                    alignmentMorphChild.label.text === 'Reset'
+                  ) {
+                    return true;
+                  }
+                }
+              }
+            }
+          }
+        }
+        return false;
       }
       function makeResetButton() {
         ide.children[6].toolBar.add(
           new PushButtonMorph(
             ide.children[6],
             () => {
-              console.log('Reset');
               reset();
             },
             'Reset'
@@ -109,6 +129,10 @@
         );
         ide.children[6].toolBar.fixLayout();
         ide.children[6].adjustToolBar();
+      }
+      function hideCorral() {
+        ide.corral.hide();
+        ide.corralBar.hide();
       }
       function getURLParameters(key) {
         const parameters = {};
@@ -198,7 +222,6 @@
         }
       }
       function reset() {
-        messageListenerInitialized = false;
         loadModelFromXMLParameter();
       }
     </script>
